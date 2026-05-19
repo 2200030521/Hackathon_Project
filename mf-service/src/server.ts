@@ -33,7 +33,9 @@ db.connect()
 
 app.get("/health", (req,res)=>{
     res.json({
-        status:"MF Service Running"
+        status: "UP",
+        service: "mf-service",
+        timestamp: new Date().toISOString()
     });
 });
 
