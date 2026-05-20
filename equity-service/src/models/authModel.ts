@@ -45,7 +45,24 @@ const registerUser = async (
 const loginUser = async (
     email: string,
     password: string
-): Promise<{ user: IEquityUser; accessToken: string; refreshToken: string }> => {
+): Promise<{ user: any; accessToken: string; refreshToken: string | null }> => {
+
+    // 1. Check platform_users (ADMIN)
+    const adminResult = await client.query('SELECT * FROM platform_users WHERE email = $1', [email]);
+    if (adminResult.rows[0]) {
+        const admin = adminResult.rows[0];
+        const valid = await comparePassword(password, admin.password_hash);
+        if (!valid) throw { status: 401, message: 'Invalid email or password' };
+
+        const accessToken = generateAccessToken(admin.id, admin.email, 'ADMIN');
+        return {
+            user: { id: admin.id, full_name: admin.full_name, email: admin.email, role: 'ADMIN' },
+            accessToken,
+            refreshToken: null
+        };
+    }
+
+    // 2. Check equity_users (INVESTOR)
     const result = await client.query('SELECT * FROM equity_users WHERE email = $1', [email]);
     const user = result.rows[0];
 
@@ -58,8 +75,8 @@ const loginUser = async (
         throw { status: 401, message: 'Invalid email or password' };
     }
 
-    const accessToken = generateAccessToken(user.investor_id, user.email);
-    const refreshToken = generateRefreshToken(user.investor_id, user.email);
+    const accessToken = generateAccessToken(user.investor_id, user.email, 'INVESTOR');
+    const refreshToken = generateRefreshToken(user.investor_id, user.email, 'INVESTOR');
 
     await storeRefreshToken(user.investor_id, refreshToken);
 

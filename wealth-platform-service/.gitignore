@@ -1,0 +1,6 @@
+node_modules/
+.env
+dist/
+
+# Ignored custom scripts
+src/utility/seedAdmin.ts

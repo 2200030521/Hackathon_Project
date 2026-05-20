@@ -8,6 +8,14 @@ export interface AuthRequest extends Request {
 
 const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
     try {
+        // Internal service-to-service bypass (wealth-platform → equity-service)
+        const serviceKey = req.headers['x-service-key'];
+        if (serviceKey && serviceKey === process.env.INTERNAL_SERVICE_KEY) {
+            const investorId = req.params.investorId || 'service';
+            req.user = { id: investorId, email: 'internal@service' };
+            return next();
+        }
+
         const authHeader = req.headers['authorization'];
         const token = authHeader && authHeader.split(' ')[1];
 
