@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { allUsers, getUserById, updateUser } from '../models/investorModel';
 import { AuthRequest } from '../middleware/authMiddleware';
 
@@ -21,8 +21,13 @@ const getProfile = async (req: AuthRequest, res: Response) => {
     }
 };
 
-const fetchAllUsers = async (_req: Request, res: Response) => {
+const fetchAllUsers = async (req: AuthRequest, res: Response) => {
     try {
+        // Only admin can fetch all users
+        if (req.user?.role !== 'ADMIN') {
+            return res.status(403).json({ success: false, message: 'Only admin can fetch all users' });
+        }
+        
         const users = await allUsers();
         res.status(200).json({ success: true, data: users, message: 'All users retrieved' });
     } catch (error: any) {

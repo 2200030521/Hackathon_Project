@@ -4,8 +4,9 @@ import { authenticateToken } from '../middleware/authMiddleware';
 
 const router = express.Router();
 
-router.get('/:investorId', authenticateToken, getTransactions);
+// POST routes must come before /:investorId to avoid route conflicts
 router.post('/buy', authenticateToken, buyStock);
 router.post('/sell', authenticateToken, sellStock);
+router.get('/:investorId', authenticateToken, getTransactions);
 
 export default router;

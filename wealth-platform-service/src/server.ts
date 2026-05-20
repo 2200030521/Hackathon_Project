@@ -63,6 +63,8 @@ app.use('/api/holdings',     equityProxy);
 app.use('/api/transactions', equityProxy);
 app.use('/api/watchlist',    equityProxy);
 app.use('/api/market',       equityProxy);
+app.use('/api/audit-logs',   equityProxy);   // audit logs
+app.use('/api/equity',       equityProxy);   // fallback for other equity-specific routes
 
 // ── MF proxy (all mf-service routes) ─────────────────────────────────────────
 app.use('/api/funds',       mfProxy);
