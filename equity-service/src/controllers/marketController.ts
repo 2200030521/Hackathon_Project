@@ -1,10 +1,22 @@
 import { Request, Response } from 'express';
 import { getAllMarketPrices, getMarketPrice, updateMarketPrice, createMarketPrice } from '../models/marketModel';
 import { isValidStockSymbol } from '../utility/validators';
+import redisClient from '../utility/redisClient';
+
+const CACHE_TTL = 60; // seconds
 
 const getAllPrices = async (_req: Request, res: Response) => {
     try {
+        const cacheKey = 'market:all';
+        const cached = await redisClient.get(cacheKey);
+
+        if (cached) {
+            return res.status(200).json({ success: true, data: JSON.parse(cached), message: 'Market prices retrieved (cache)' });
+        }
+
         const prices = await getAllMarketPrices();
+        await redisClient.set(cacheKey, JSON.stringify(prices), { EX: CACHE_TTL });
+
         res.status(200).json({ success: true, data: prices, message: 'Market prices retrieved' });
     } catch (error: any) {
         res.status(error.status || 500).json({ success: false, message: error.message });
@@ -20,10 +32,19 @@ const getPrice = async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: 'Invalid stock symbol' });
         }
 
+        const cacheKey = `market:${stockSymbol}`;
+        const cached = await redisClient.get(cacheKey);
+
+        if (cached) {
+            return res.status(200).json({ success: true, data: JSON.parse(cached), message: 'Market price retrieved (cache)' });
+        }
+
         const price = await getMarketPrice(stockSymbol);
         if (!price) {
             return res.status(404).json({ success: false, message: 'Stock price not found' });
         }
+
+        await redisClient.set(cacheKey, JSON.stringify(price), { EX: CACHE_TTL });
 
         res.status(200).json({ success: true, data: price, message: 'Market price retrieved' });
     } catch (error: any) {
@@ -67,23 +88,15 @@ const updatePrices = async (req: Request, res: Response) => {
 
                 const existingPrice = await getMarketPrice(stock_symbol);
 
-                if (existingPrice) {
-                    return updateMarketPrice(
-                        stock_symbol,
-                        company_name,
-                        current_price,
-                        day_change_percent,
-                        exchange
-                    );
-                }
+                const result = existingPrice
+                    ? await updateMarketPrice(stock_symbol, company_name, current_price, day_change_percent, exchange)
+                    : await createMarketPrice(stock_symbol, company_name, current_price, day_change_percent, exchange);
 
-                return createMarketPrice(
-                    stock_symbol,
-                    company_name,
-                    current_price,
-                    day_change_percent,
-                    exchange
-                );
+                // Invalidate per-symbol and all-prices cache
+                await redisClient.del(`market:${stock_symbol.toUpperCase()}`);
+                await redisClient.del('market:all');
+
+                return result;
             })
         );
 
