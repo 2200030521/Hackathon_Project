@@ -3,7 +3,7 @@ import { verifyToken } from '../utility/jwt';
 import { hasActiveSession } from '../models/authModel';
 
 export interface AuthRequest extends Request {
-    user?: { id: string; email: string };
+    user?: { id: string; email: string; role?: string };
 }
 
 const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -17,7 +17,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
         }
 
         const authHeader = req.headers['authorization'];
-        const token = authHeader && authHeader.split(' ')[1];
+        const token = authHeader?.split(' ')[1];
 
         if (!token) {
             return res.status(401).json({
@@ -38,7 +38,7 @@ const authenticateToken = async (req: AuthRequest, res: Response, next: NextFunc
             });
         }
 
-        req.user = { id: payload.id, email: payload.email };
+        req.user = { id: payload.id, email: payload.email, role: payload.role };
         next();
     } catch (error: any) {
         res.status(401).json({

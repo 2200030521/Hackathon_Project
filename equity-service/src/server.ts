@@ -17,6 +17,7 @@ import holdingRoutes from './routes/holdingRoutes';
 import transactionRoutes from './routes/transactionRoutes';
 import watchlistRoutes from './routes/watchlistRoutes';
 import marketRoutes from './routes/marketRoutes';
+import auditRoutes from './routes/auditRoutes';
 
 const app = express();
 
@@ -48,6 +49,7 @@ app.use('/api/holdings', holdingRoutes);
 app.use('/api/transactions', transactionRoutes);
 app.use('/api/watchlist', watchlistRoutes);
 app.use('/api/market', marketRoutes);
+app.use('/api/audit-logs', auditRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);
